@@ -5,13 +5,10 @@ Created on Sat Mar  3 17:24:32 2018
 @author: George
 
 EDA
-TODO: Overview of sale prices
-TODO: Sale prices over time
+TODO: Any correlations between features? (multicollinearity) - maybe use ridge
+         regression
+TODO: Remove missing data and create labels
 TODO: Any significant differences between test and train?
-
-Data cleaning
-
-Fitting
 """
 
 import pandas as pd
