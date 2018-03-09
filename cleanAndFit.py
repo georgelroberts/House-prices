@@ -11,7 +11,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
+import matplotlib.pyplot as plt
 
 dataFolder = 'Data\\'
 
@@ -53,29 +54,33 @@ trainX, test = encodeLabels(trainX, test)
 # implemented and an xgboost regressor is used.
 # TODO: Use k-fold splitting to find the best hyperparameters
 
-n_splits = 3
-CVError = []
+max_depth = np.linspace(1, 10, 10)
+depthVsError = []
+for depth in max_depth:
 
-skf = StratifiedKFold(n_splits=n_splits)
-for train_index, test_index in skf.split(trainX, trainY):
-    trainX2, CVX = trainX.iloc[train_index], trainX.iloc[test_index]
-    trainY2, CVY = trainY.iloc[train_index], trainY.iloc[test_index]
+    n_splits = 3
+    CVError = []
 
-    model = xgb.XGBRegressor()
-    model.fit(trainX2, trainY2)
-    CVYfit = model.predict(CVX)
+    skf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    for train_index, test_index in skf.split(trainX, trainY):
+        trainX2, CVX = trainX.iloc[train_index], trainX.iloc[test_index]
+        trainY2, CVY = trainY.iloc[train_index], trainY.iloc[test_index]
 
+        model = xgb.XGBRegressor(max_depth=int(depth))
+        model.fit(trainX2, trainY2)
+        CVYfit = model.predict(CVX)
 
-    def rmsle(y, y0):
-        """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
-        assert len(y) == len(y0)
-        return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
+        def rmsle(y, y0):
+            """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
+            assert len(y) == len(y0)
+            return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
 
+        CVError.append(rmsle(CVY, CVYfit.reshape(-1, 1)).values[0])
+    CVError = np.mean(CVError)
+    depthVsError.append(CVError)
 
-    CVError.append(rmsle(CVY, CVYfit.reshape(-1, 1)).values[0])
-
-CVError = np.mean(CVError)
-
+fig, ax = plt.subplots()
+plt.plot(max_depth, depthVsError)
 # %% Fit test data for submission
 
 submission = pd.DataFrame(test.index)
