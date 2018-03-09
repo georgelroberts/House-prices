@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 dataFolder = 'Data\\'
 
@@ -23,24 +23,6 @@ trainY = train[['SalePrice']]
 trainX = train.drop('SalePrice', axis=1)
 test = test.set_index('Id')
 trainX = trainX.set_index('Id')
-
-# %% XGBoost dealds well with NAs, but labelencoder doesn't, so lets deal with
-# the object values (see EDA analysis).
-
-#nanCols = pd.isnull(train).sum()
-#nanCols = nanCols[nanCols > 0]
-#nanObj = train[nanCols.index].select_dtypes(include=['object']).copy()
-#modal = ['MasVnrType', 'Electrical']
-#for col in modal:
-#    train[col].fillna(train[col].mode().values[0], inplace=True)
-#    test[col].fillna(train[col].mode().values[0], inplace=True)
-#
-#nanObj.drop(modal, axis=1, inplace=True)
-#
-#for col in nanObj.columns:
-#    train[col].fillna(0, inplace=True)
-#    test[col].fillna(0, inplace=True)
-
 
 # %% Label encoding for non-numeric data. Fit the train and test together so
 # LabelEncoder doesn't throw an error
@@ -68,23 +50,31 @@ def encodeLabels(XTrain, XTest):
 trainX, test = encodeLabels(trainX, test)
 
 # %% Basic fit on data - Kaggle uses root mean squared log error, so this is
-# implemented and an xgboost regressor is used
+# implemented and an xgboost regressor is used.
+# TODO: Use k-fold splitting to find the best hyperparameters
 
-trainX2, CVX, trainY2, CVY = train_test_split(
-        trainX, trainY, test_size=0.33, random_state=42)
+n_splits = 3
+CVError = []
 
-model = xgb.XGBRegressor()
-model.fit(trainX2, trainY2)
-CVYfit = model.predict(CVX)
+skf = StratifiedKFold(n_splits=n_splits)
+for train_index, test_index in skf.split(trainX, trainY):
+    trainX2, CVX = trainX.iloc[train_index], trainX.iloc[test_index]
+    trainY2, CVY = trainY.iloc[train_index], trainY.iloc[test_index]
+
+    model = xgb.XGBRegressor()
+    model.fit(trainX2, trainY2)
+    CVYfit = model.predict(CVX)
 
 
-def rmsle(y, y0):
-    """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
-    assert len(y) == len(y0)
-    return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
+    def rmsle(y, y0):
+        """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
+        assert len(y) == len(y0)
+        return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
 
 
-CVError = rmsle(CVY, CVYfit.reshape(-1, 1)).values[0]
+    CVError.append(rmsle(CVY, CVYfit.reshape(-1, 1)).values[0])
+
+CVError = np.mean(CVError)
 
 # %% Fit test data for submission
 
