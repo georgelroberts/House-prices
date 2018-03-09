@@ -52,38 +52,33 @@ trainX, test = encodeLabels(trainX, test)
 
 # %% Basic fit on data - Kaggle uses root mean squared log error, so this is
 # implemented and an xgboost regressor is used.
-# TODO: Use k-fold splitting to find the best hyperparameters
+# TODO: Use k-fold splitting to find the best hyperparameters: Max-depth = 4,
+# learning rate = 0.1, n_estimators = 100
 
-max_depth = np.linspace(1, 10, 10)
-depthVsError = []
-for depth in max_depth:
 
-    n_splits = 3
-    CVError = []
+n_splits = 3
+CVError = []
 
-    skf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-    for train_index, test_index in skf.split(trainX, trainY):
-        trainX2, CVX = trainX.iloc[train_index], trainX.iloc[test_index]
-        trainY2, CVY = trainY.iloc[train_index], trainY.iloc[test_index]
+skf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+for train_index, test_index in skf.split(trainX, trainY):
+    trainX2, CVX = trainX.iloc[train_index], trainX.iloc[test_index]
+    trainY2, CVY = trainY.iloc[train_index], trainY.iloc[test_index]
 
-        model = xgb.XGBRegressor(max_depth=int(depth))
-        model.fit(trainX2, trainY2)
-        CVYfit = model.predict(CVX)
+    model = xgb.XGBRegressor(learning_rate=0.1, max_depth=4, n_estimators=100)
+    model.fit(trainX2, trainY2)
+    CVYfit = model.predict(CVX)
 
-        def rmsle(y, y0):
-            """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
-            assert len(y) == len(y0)
-            return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
+    def rmsle(y, y0):
+        """ Thanks to https://www.kaggle.com/jpopham91/rmlse-vectorized """
+        assert len(y) == len(y0)
+        return np.sqrt(np.mean(np.power(np.log1p(y)-np.log1p(y0), 2)))
 
-        CVError.append(rmsle(CVY, CVYfit.reshape(-1, 1)).values[0])
-    CVError = np.mean(CVError)
-    depthVsError.append(CVError)
+    CVError.append(rmsle(CVY, CVYfit.reshape(-1, 1)).values[0])
+CVError = np.mean(CVError)
 
-fig, ax = plt.subplots()
-plt.plot(max_depth, depthVsError)
 # %% Fit test data for submission
 
 submission = pd.DataFrame(test.index)
 submission['SalePrice'] = model.predict(test)
 subFolder = 'C:\\Users\\George\\OneDrive - University Of Cambridge\\Others\\Machine learning\\Kaggle\\House prices\\Output\\'
-submission.to_csv(subFolder+'XGBoost2.csv', index=False)
+submission.to_csv(subFolder+'XGBoost3.csv', index=False)
