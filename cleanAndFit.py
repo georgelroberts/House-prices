@@ -30,7 +30,7 @@ trainSize = trainX.shape[0]
 X = trainX.append(test)
 X = X.dropna(axis=1, how='any')
 trainX = X.loc[0:trainSize]
-test = X.loc[trainSize:]
+test = X.loc[trainSize+1:]
 
 # %% Label encoding for non-numeric data
 
@@ -68,3 +68,10 @@ def rmsle(y, y0):
 
 
 CVError = rmsle(CVY, CVYfit.reshape(-1, 1)).values[0]
+
+# %% Fit test data for submission
+
+submission = pd.DataFrame(test.index)
+submission['SalePrice'] = model.predict(test)
+subFolder = 'C:\\Users\\George\\OneDrive - University Of Cambridge\\Others\\Machine learning\\Kaggle\\House prices\\Output\\'
+submission.to_csv(subFolder+'XGBoost1.csv', index=False)
