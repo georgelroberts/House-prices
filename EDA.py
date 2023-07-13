@@ -8,6 +8,7 @@ TODO: Remove missing data and create labels
 TODO: Any significant differences between test and train?
 """
 
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import HuberRegressor
@@ -15,8 +16,8 @@ import seaborn as sns
 
 dataFolder = 'Data\\'
 
-train = pd.read_csv(dataFolder+'train.csv')
-test = pd.read_csv(dataFolder+'test.csv')
+train = pd.read_csv(f'{dataFolder}train.csv')
+test = pd.read_csv(f'{dataFolder}test.csv')
 
 print(train.info())
 
@@ -82,8 +83,9 @@ nanCols = pd.isnull(train).sum()
 nanCols = nanCols[nanCols>0]
 nanCols = nanCols.sort_values(ascending=False)
 
-print('There are {} features in the training set, {} of which have some null values.'
-      .format(train.shape[1]-2, nanCols.shape[0])) # Subtract label and ID
+print(
+    f'There are {train.shape[1] - 2} features in the training set, {nanCols.shape[0]} of which have some null values.'
+)
 
 fig, ax = plt.subplots()
 corrPlot = sns.barplot(x=nanCols.index, y=nanCols.values)
@@ -105,7 +107,7 @@ modal = ['MasVnrType', 'Electrical']
 for col in modal:
     train[col].fillna(train[col].mode().values[0], inplace=True)
     test[col].fillna(train[col].mode().values[0], inplace=True)
-    
+
 nanObj.drop(modal, axis=1, inplace=True)
 
 for col in nanObj.columns:
@@ -128,6 +130,6 @@ for col in nanVal.columns:
 # Lets let xgboost deal with all rows where GarageYrBlt and MasVnrArea are
 # NaNs, because it looks like setting it to an average value will skew the
 # results. There aren't many values for these anyway. Lets average LotFrontage
-    
+
 train['LotFrontage'].fillna(train.LotFrontage.mean(), inplace=True)
 test['LotFrontage'].fillna(train.LotFrontage.mean(), inplace=True)

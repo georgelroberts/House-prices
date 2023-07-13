@@ -7,6 +7,7 @@ Created on Thu Mar  8 18:14:41 2018
 Start with a rudimental clean and fit to test performance
 """
 
+
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -16,8 +17,8 @@ import matplotlib.pyplot as plt
 
 dataFolder = 'Data\\'
 
-train = pd.read_csv(dataFolder+'train.csv')
-test = pd.read_csv(dataFolder+'test.csv')
+train = pd.read_csv(f'{dataFolder}train.csv')
+test = pd.read_csv(f'{dataFolder}test.csv')
 
 # %% Seprate the data into X and Y
 trainY = train[['SalePrice']]
@@ -42,7 +43,7 @@ def encodeLabels(XTrain, XTest):
         le.fit(Xobj[column])
         Xobj[column] = le.transform(Xobj[column])
     X = pd.concat([Xval, Xobj], axis=1)
-    XTrain = X.loc[0:trainSize]
+    XTrain = X.loc[:trainSize]
     XTest = X.loc[trainSize+1:]
 
     return XTrain, XTest
@@ -81,4 +82,4 @@ CVError = np.mean(CVError)
 submission = pd.DataFrame(test.index)
 submission['SalePrice'] = model.predict(test)
 subFolder = 'C:\\Users\\George\\OneDrive - University Of Cambridge\\Others\\Machine learning\\Kaggle\\House prices\\Output\\'
-submission.to_csv(subFolder+'XGBoost3.csv', index=False)
+submission.to_csv(f'{subFolder}XGBoost3.csv', index=False)
